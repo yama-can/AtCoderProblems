@@ -13,10 +13,10 @@ use std::{
 
 const FIX_RANGE_SECOND: i64 = 10 * 60;
 
-async fn crawl<R: Rng>(url: &str, rng: &mut R, username: &str, password: &str) -> Result<()> {
+async fn crawl<R: Rng>(url: &str, rng: &mut R, revel_session: &str) -> Result<()> {
     log::info!("Start crawling...");
     let pg_pool = initialize_pool(&url).await?;
-    let client = AtCoderClient::new(username, password).await?;
+    let client = AtCoderClient::new(revel_session).await?;
     let mut crawler = VirtualContestCrawler::new(pg_pool.clone(), client.clone(), rng);
     crawler.crawl().await?;
     log::info!("Finished crawling");
@@ -34,8 +34,7 @@ async fn crawl<R: Rng>(url: &str, rng: &mut R, username: &str, password: &str) -
 async fn main() {
     init_log_config().unwrap();
     let url = env::var("SQL_URL").expect("SQL_URL must be set.");
-    let username = env::var("ATCODER_USERNAME").expect("ATCODER_USERNAME is not set.");
-    let password = env::var("ATCODER_PASSWORD").expect("ATCODER_PASSWORD is not set.");
+    let revel_session = env::var("ATCODER_SESSION").expect("ATCODER_SESSION is not set.");
     log::info!("Started");
 
     let mut rng = thread_rng();
@@ -44,7 +43,7 @@ async fn main() {
         log::info!("Start new loop...");
         let now = Instant::now();
 
-        if let Err(e) = crawl(&url, &mut rng, &username, &password).await {
+        if let Err(e) = crawl(&url, &mut rng, &revel_session).await {
             log::error!("{:?}", e);
         }
 

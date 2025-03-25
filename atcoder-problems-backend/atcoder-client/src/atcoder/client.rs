@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::util;
 use anyhow::{Context, Result};
+use reqwest::{cookie::Jar, Url};
 
 use super::*;
 
@@ -13,27 +14,22 @@ pub struct AtCoderClient {
 }
 
 impl AtCoderClient {
-    pub async fn new(username: &str, password: &str) -> Result<Self> {
+    pub async fn new(revel_session: &str) -> Result<Self> {
+        let cookie_store = Arc::new(Jar::default());
+
+        cookie_store.add_cookie_str(
+            format!("REVEL_SESSION={}", revel_session).as_str(),
+            &Url::parse(ATCODER_PREFIX).context("Failed to parse URL")?,
+        );
+
         let client = reqwest::Client::builder()
             .cookie_store(true)
+            .cookie_provider(Arc::clone(&cookie_store))
             .gzip(true)
             .build()?;
-        let response = client
-            .get("https://atcoder.jp/login")
-            .send()
-            .await?
-            .text()
-            .await?;
-        let csrf_token = extract_csrf_token(&response).context("no csrf token")?;
-        let params = [
-            ("username", username),
-            ("password", password),
-            ("csrf_token", &csrf_token),
-        ];
 
         let response = client
-            .post("https://atcoder.jp/login")
-            .form(&params)
+            .get("https://atcoder.jp/contests/practice/submissions/me")
             .send()
             .await?;
         if !response.status().is_success() {

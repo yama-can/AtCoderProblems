@@ -15,8 +15,7 @@ async fn main() {
     info!("Started");
     let url = env::var("SQL_URL").expect("SQL_URL is not set.");
 
-    let username = env::var("ATCODER_USERNAME").expect("ATCODER_USERNAME is not set.");
-    let password = env::var("ATCODER_PASSWORD").expect("ATCODER_PASSWORD is not set.");
+    let revel_session = env::var("ATCODER_SESSION").expect("ATCODER_SESSION is not set.");
 
     loop {
         info!("Start new loop");
@@ -24,7 +23,7 @@ async fn main() {
         match load_contest(&url).await {
             Ok(contests) => {
                 for contest in contests {
-                    finish_one_contest(&url, &contest.id, &username, &password).await;
+                    finish_one_contest(&url, &contest.id, &revel_session).await;
                 }
             }
             Err(e) => {
@@ -35,10 +34,10 @@ async fn main() {
     }
 }
 
-async fn finish_one_contest(url: &str, contest_id: &str, username: &str, password: &str) {
+async fn finish_one_contest(url: &str, contest_id: &str, revel_session: &str) {
     loop {
         info!("Starting {}", contest_id);
-        match crawl_one_contest(url, contest_id, username, password).await {
+        match crawl_one_contest(url, contest_id, revel_session).await {
             Ok(_) => {
                 info!("Finished {}", contest_id);
                 return;
@@ -54,11 +53,10 @@ async fn finish_one_contest(url: &str, contest_id: &str, username: &str, passwor
 async fn crawl_one_contest(
     url: &str,
     contest_id: &str,
-    username: &str,
-    password: &str,
+    revel_session: &str,
 ) -> Result<()> {
     let db = initialize_pool(url).await?;
-    let client = AtCoderClient::new(username, password).await?;
+    let client = AtCoderClient::new(revel_session).await?;
     let crawler = WholeContestCrawler::new(db, client.clone(), contest_id);
     crawler.crawl().await?;
     Ok(())

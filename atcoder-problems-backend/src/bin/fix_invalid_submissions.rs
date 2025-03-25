@@ -13,12 +13,11 @@ async fn main() {
     init_log_config().unwrap();
     info!("Started");
     let url = env::var("SQL_URL").expect("SQL_URL must be set.");
-    let username = env::var("ATCODER_USERNAME").expect("ATCODER_USERNAME is not set.");
-    let password = env::var("ATCODER_PASSWORD").expect("ATCODER_PASSWORD is not set.");
+    let revel_session = env::var("ATCODER_SESSION").expect("ATCODER_SESSION is not set.");
 
     let db = initialize_pool(&url).await.unwrap();
     let now = Utc::now().timestamp();
-    let client = AtCoderClient::new(&username, &password)
+    let client = AtCoderClient::new(&revel_session)
         .await
         .expect("AtCoder authentication failure");
     let crawler = FixCrawler::new(db, client, now - ONE_DAY);
